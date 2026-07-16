@@ -362,9 +362,9 @@
             "type": "string"
           },
           "origin": {
-            "description": "Origem do pedido:\n * 0 - Web\n * 1 - Marketplace\n * 2 - App",
+            "description": "Origem do pedido:\n * 0 - Web\n * 1 - Marketplace\n * 2 - App\n * 3 - Other",
             "type": "integer",
-            "enum": [0, 1, 2],
+            "enum": [0, 1, 2, 3],
             "example": 0
           },
           "customer": {
