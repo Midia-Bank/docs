@@ -57,6 +57,17 @@
             ]
           }
         ]
+      },
+      {
+        "tab": "Novidades",
+        "groups": [
+          {
+            "group": "Novidades",
+            "pages": [
+              "changelog"
+            ]
+          }
+        ]
       }
     ]
   },
