@@ -11,20 +11,32 @@ rss: true
   1. Copie o bloco <Update> abaixo e cole no TOPO da lista (mais recente primeiro).
   2. label  -> o que aparece na lateral. Use "Mês de Ano" ou a data da entrega.
   3. description -> versão, sprint ou data exata (opcional).
-  4. tags   -> viram filtros na lateral. Use sempre os mesmos nomes:
-               "Dashboard", "Integrações", "Pixel", "API", "Correções"
+  4. tags   -> viram filtros na lateral. Use sempre os mesmos nomes, e prefira a
+               mais específica (mudança na tela de Produtos = "Produtos", não
+               "Dashboard Geral"). Use "Correções" só para conserto de bug:
+               "Dashboard Geral", "Dashboard Ecommerce", "Produtos", "Pedidos",
+               "Tracking", "Web Analytics", "Influenciadores", "Clientes",
+               "Valores Adicionais", "Solomon IA", "Integrações", "Pixel",
+               "API", "Assinatura", "Correções"
 
   Esta página é só de produto. Novidades da própria documentação vão em
   changelog/api.mdx, para não misturar os dois públicos.
 
-  <Update label="Mês de Ano" description="dd/mm/aaaa" tags={["Dashboard"]}>
+  <Update label="Mês de Ano" description="dd/mm/aaaa" tags={["Produtos"]}>
     ## Título da entrega
 
     O que mudou, em 1-3 frases, do ponto de vista de quem usa.
   </Update>
 */}
 
-<Update label="Agosto de 2026" description="11/08/2026" tags={["Dashboard"]}>
+<Update label="2 de setembro de 2026" description="02/09/2026" tags={["Produtos"]}>
+  ## Gráficos e comparação de períodos na tela de Produtos
+
+  Agora você pode visualizar a evolução de até 5 produtos em gráficos ao longo do tempo, escolhendo entre dia, semana ou mês. É possível comparar dois períodos diferentes e acompanhar até 2 métricas simultaneamente, incluindo receita, quantidade vendida, ticket médio, custos, taxas, custo de mídia e lucro real. A comparação aparece tanto no gráfico quanto na tabela de dados.
+</Update>
+
+
+<Update label="Agosto de 2026" description="11/08/2026" tags={["Dashboard Geral"]}>
   ## Página de novidades
 
   A partir de agora as atualizações da plataforma ficam registradas aqui, no mesmo lugar da documentação.
