@@ -1,0 +1,51 @@
+---
+title: "Novidades da API"
+sidebarTitle: "API"
+description: "Versões, novos endpoints e mudanças da Solomon Admin API"
+rss: true
+---
+
+{/*
+  Página voltada a quem integra com a API (público desenvolvedor).
+  Novidades de produto (dashboard) vão em changelog/plataforma.mdx.
+
+  Como adicionar uma release:
+  1. Copie o bloco <Update> e cole no TOPO (mais recente primeiro).
+  2. label -> versão (ex.: "v1.1.0"). description -> data (dd/mm/aaaa).
+  3. tags -> use "API", "Novidades", "Correções".
+*/}
+
+<Update label="v1.1.0" description="03/09/2026" tags={["API", "Novidades"]}>
+  ## Custos adicionais, influenciadores e novos campos de pedido
+
+  Esta versão expande a Admin API para cobrir, via API, o que antes só era gerido pelo dashboard.
+
+  ### Custos adicionais
+  CRUD completo de custos manuais da operação (aluguel, plataformas, marketing, etc.):
+  - `GET /costs` — lista os custos agrupados por frequência
+  - `POST /costs` — cria um custo
+  - `PUT /costs` — edita um custo
+  - `DELETE /costs` — remove um custo
+  - `GET /costs/historical` — histórico diário projetado
+
+  Veja o guia de [Custos adicionais](/management/costs).
+
+  ### Influenciadores
+  Cadastro e gestão de influenciadores, campanhas, links, cupons e custos de comissão:
+  - `GET /influencers`, `POST /influencers`, `PUT /influencers`, `DELETE /influencers`
+  - `GET /influencers/costs`, `POST /influencers/costs`, `DELETE /influencers/costs`
+  - `POST /influencers/coupons`, `DELETE /influencers/coupons`
+
+  Os links são encurtados e instrumentados com UTMs pela Solomon, e as URLs passam por validação de
+  segurança (HTTPS + host público). Veja o guia de [Influenciadores](/management/influencers).
+
+  ### Novos campos de pedido
+  - `isFirstOrder` (pedido) — indica explicitamente o primeiro pedido do cliente.
+  - `customer.birthdate` — data de nascimento do cliente (ISO `YYYY-MM-DD`).
+
+  Ambos são opcionais e retrocompatíveis. Veja [Pedidos](/store/orders).
+
+  ### Novos escopos
+  Foram adicionados os escopos `costs.read`, `costs.write`, `influencers.read` e `influencers.write`.
+  Gere ou atualize sua [API Key](/authentication) concedendo apenas os escopos necessários.
+</Update>

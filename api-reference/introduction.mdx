@@ -4,14 +4,24 @@ description: 'Use a API reference para construir soluções que conectem com a S
 ---
 
 ## Endpoints
+
+### Ingestão de dados
 - [Enviar Pedido](/api-reference/ingestion/create-order): envia um novo pedido para processamento ou reprocessamento
 - [Enviar Produto](/api-reference/ingestion/create-product): envia um novo produto para processamento ou reprocessamento
+
+### Custos adicionais
+- [Listar](/api-reference/costs/list-costs), [Criar](/api-reference/costs/create-cost), [Atualizar](/api-reference/costs/update-cost) e [Remover](/api-reference/costs/delete-cost) custos adicionais, além do [histórico diário](/api-reference/costs/cost-history). Veja o guia de [Custos adicionais](/management/costs).
+
+### Influenciadores
+- [Listar](/api-reference/influencers/list-influencers), [Cadastrar](/api-reference/influencers/create-influencer), [Atualizar](/api-reference/influencers/update-influencer) e [Remover](/api-reference/influencers/delete-influencer) influenciadores; gerir [custos](/api-reference/influencers/create-influencer-costs) e [cupons](/api-reference/influencers/create-influencer-coupons). Veja o guia de [Influenciadores](/management/influencers).
 
 ## Use cases comuns
 - Conectar-se à Solomon com uma plataforma própria
 - Registrar pedidos gerados fora da sua plataforma na Solomon (vendas manuais, marketplaces, POS, etc.)
 - Automatizar a atualização dos custos de produto através de uma integração própria
 - Corrigir ou reprocessar dados históricos de pedidos em massa
+- Manter custos operacionais (aluguel, mídia, ferramentas) sincronizados com a plataforma
+- Cadastrar e acompanhar campanhas com influenciadores (links, cupons e comissões)
 
 ## Autenticação
 Antes de começar, gere suas [chaves de API](/authentication) na Solomon. Cada chave de API pertence a uma loja

@@ -6,7 +6,7 @@
     "license": {
       "name": "MIT"
     },
-    "version": "1.0.0"
+    "version": "1.1.0"
   },
   "servers": [
     {
@@ -57,6 +57,7 @@
                 "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)",
                 "browserIp": "189.45.123.10",
                 "cartToken": "cart_abcd1234",
+                "isFirstOrder": true,
                 "customer": {
                   "customerId": "cus_987654321",
                   "name": "Cliente Teste",
@@ -67,7 +68,8 @@
                   "zip": "12230-000",
                   "city": "São José dos Campos",
                   "createdAt": "2025-11-02T10:15:00Z",
-                  "updatedAt": "2026-01-10T14:30:00Z"
+                  "updatedAt": "2026-01-10T14:30:00Z",
+                  "birthdate": "1990-05-21"
                 },
                 "items": [
                   {
@@ -189,6 +191,234 @@
           }
       }
     }
+    },
+    "/costs": {
+      "get": {
+        "summary": "Listar custos adicionais",
+        "operationId": "listCosts",
+        "description": "Retorna todos os custos adicionais manuais da loja, agrupados por frequência (`monthly`, `weekly`, `daily`, `specific`). Requer o escopo `costs.read`.",
+        "responses": {
+          "200": {
+            "description": "Custos adicionais agrupados por frequência",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CostsListResponse" } } }
+          },
+          "403": { "description": "Escopo `costs.read` ausente", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "500": { "description": "Erro interno do servidor", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      },
+      "post": {
+        "summary": "Criar custo adicional",
+        "operationId": "createCost",
+        "description": "Cria um custo adicional manual (ex.: aluguel, plataformas, marketing). Custos do tipo `marketing` ou `product` disparam automaticamente o recálculo das métricas. Requer o escopo `costs.write`.",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": {
+            "schema": { "$ref": "#/components/schemas/AdditionalCost" },
+            "example": { "name": "Aluguel do galpão", "date": "2026-08-01", "end_date": "2026-12-31", "status": "active", "type": "aluguel", "value": 3500.00, "frequency": "monthly" }
+          } }
+        },
+        "responses": {
+          "200": { "description": "Custo criado", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CostMutationResponse" } } } },
+          "400": { "description": "Erro de validação", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "500": { "description": "Erro interno do servidor", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      },
+      "put": {
+        "summary": "Atualizar custo adicional",
+        "operationId": "updateCost",
+        "description": "Edita um custo adicional existente pelo `additional_cost_id`. Informe `old_frequency` quando a frequência mudar. Só recalcula as métricas quando algum campo que afeta os números muda (valor, nome, datas ou frequência). Requer o escopo `costs.write`.",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": {
+            "schema": { "$ref": "#/components/schemas/AdditionalCost" },
+            "example": { "additional_cost_id": "aZ12Bc34De", "name": "Aluguel do galpão", "date": "2026-08-01", "end_date": "2026-12-31", "status": "active", "type": "aluguel", "value": 4000.00, "frequency": "monthly" }
+          } }
+        },
+        "responses": {
+          "200": { "description": "Custo atualizado", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Success" } } } },
+          "400": { "description": "Erro de validação ou custo inexistente", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "500": { "description": "Erro interno do servidor", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      },
+      "delete": {
+        "summary": "Remover custo adicional",
+        "operationId": "deleteCost",
+        "description": "Remove um custo adicional pelo `additional_cost_id` e pela `frequency`. Requer o escopo `costs.write`.",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": {
+            "schema": { "$ref": "#/components/schemas/DeleteCost" },
+            "example": { "additional_cost_id": "aZ12Bc34De", "frequency": "monthly" }
+          } }
+        },
+        "responses": {
+          "200": { "description": "Custo removido", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Success" } } } },
+          "400": { "description": "Custo inexistente ou requisição inválida", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "500": { "description": "Erro interno do servidor", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/costs/historical": {
+      "get": {
+        "summary": "Histórico diário de custos adicionais",
+        "operationId": "listCostHistory",
+        "description": "Retorna as linhas diárias projetadas dos custos adicionais no intervalo informado. Requer o escopo `costs.read`.",
+        "parameters": [
+          { "name": "start", "in": "query", "required": true, "description": "Data inicial (ISO `YYYY-MM-DD`)", "schema": { "type": "string", "format": "date", "example": "2026-08-01" } },
+          { "name": "end", "in": "query", "required": true, "description": "Data final (ISO `YYYY-MM-DD`)", "schema": { "type": "string", "format": "date", "example": "2026-08-31" } }
+        ],
+        "responses": {
+          "200": { "description": "Linhas diárias projetadas", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CostHistoryResponse" } } } },
+          "400": { "description": "Intervalo de datas inválido", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "500": { "description": "Erro interno do servidor", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/influencers": {
+      "get": {
+        "summary": "Listar influenciadores",
+        "operationId": "listInfluencers",
+        "description": "Retorna os influenciadores da loja com suas campanhas, links, cupons e custos. Requer o escopo `influencers.read`.",
+        "responses": {
+          "200": { "description": "Lista de influenciadores", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/InfluencersListResponse" } } } },
+          "403": { "description": "Escopo `influencers.read` ausente", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "500": { "description": "Erro interno do servidor", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      },
+      "post": {
+        "summary": "Cadastrar influenciador",
+        "operationId": "createInfluencer",
+        "description": "Cadastra um influenciador com seus links (com encurtador e UTMs gerados pela Solomon), cupons e custos, tudo numa única requisição. As URLs passam por validação anti-SSRF (apenas HTTPS, host público). Requer o escopo `influencers.write`.",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": {
+            "schema": { "$ref": "#/components/schemas/CreateInfluencer" },
+            "example": { "name": "Duda Raiz", "campaign": "Lançamento Verão", "category": "influencer", "links": [ { "url": "https://www.sualoja.com.br/verao" } ], "coupons": [ { "cupom": "DUDA10", "start_date": "2026-08-01", "end_date": "2026-08-31" } ], "costs": [ { "value": 500, "frequency": "monthly", "start_date": "2026-08-01", "end_date": "2026-08-31", "is_campaign_cost": false, "is_coupon_cost": false } ] }
+          } }
+        },
+        "responses": {
+          "200": { "description": "Influenciador criado; retorna as URLs curtas geradas", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ShortUrlsResponse" } } } },
+          "400": { "description": "Erro de validação (URL, datas)", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "409": { "description": "Conflito de período de cupom", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "500": { "description": "Erro interno do servidor", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      },
+      "put": {
+        "summary": "Atualizar influenciador",
+        "operationId": "updateInfluencer",
+        "description": "Atualiza a categoria de um influenciador (o `name` identifica o influenciador). Requer o escopo `influencers.write`.",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": {
+            "schema": { "$ref": "#/components/schemas/UpdateInfluencer" },
+            "example": { "name": "Duda Raiz", "category": "vip" }
+          } }
+        },
+        "responses": {
+          "200": { "description": "Influenciador atualizado", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Success" } } } },
+          "400": { "description": "Erro de validação", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "500": { "description": "Erro interno do servidor", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      },
+      "delete": {
+        "summary": "Remover link, campanha ou influenciador",
+        "operationId": "deleteInfluencer",
+        "description": "Exclusão granular: com `short_code` remove apenas aquele link; sem `short_code` remove a campanha (`campaign_id`) e, com `delete_influencer: true`, o influenciador inteiro (custos por nome + cadastro). Requer o escopo `influencers.write`.",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": {
+            "schema": { "$ref": "#/components/schemas/DeleteInfluencer" },
+            "example": { "name": "Duda Raiz", "campaign_id": "N93ys5", "delete_influencer": true }
+          } }
+        },
+        "responses": {
+          "200": { "description": "Tudo removido com sucesso", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/InfluencerDeleteResponse" } } } },
+          "207": { "description": "Remoção parcial (alguma operação falhou)", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/InfluencerDeleteResponse" } } } },
+          "500": { "description": "Erro interno do servidor", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/influencers/costs": {
+      "get": {
+        "summary": "Listar custos de influenciadores",
+        "operationId": "listInfluencerCosts",
+        "description": "Retorna os custos de influenciadores agrupados por influenciador. Requer o escopo `influencers.read`.",
+        "responses": {
+          "200": { "description": "Custos agrupados por influenciador", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/InfluencerCostsListResponse" } } } },
+          "500": { "description": "Erro interno do servidor", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      },
+      "post": {
+        "summary": "Adicionar custos a influenciadores",
+        "operationId": "createInfluencerCosts",
+        "description": "Adiciona custos (comissão fixa, comissão variável e/ou valor por entrega) a um ou mais influenciadores. Valida sobreposição de período entre custos com comissão. Requer o escopo `influencers.write`.",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": {
+            "schema": { "$ref": "#/components/schemas/CreateInfluencerCosts" },
+            "example": { "influencers": [ { "name": "Duda Raiz", "influencer_cost_id": "Ro7ckB", "campaign_id": "N93ys5", "costs": [ { "fixed_fee": 200, "var_fee": 10, "value": 0, "start_date": "2026-09-01", "end_date": "2026-09-30", "is_campaign_cost": true, "is_coupon_cost": false } ] } ] }
+          } }
+        },
+        "responses": {
+          "200": { "description": "Custos criados", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/InfluencerCostsMutationResponse" } } } },
+          "400": { "description": "Erro de validação ou conflito de período", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "500": { "description": "Erro interno do servidor", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      },
+      "delete": {
+        "summary": "Remover custo de influenciador",
+        "operationId": "deleteInfluencerCost",
+        "description": "Remove um custo de influenciador pelo `cost_id` e pela `frequency`. Requer o escopo `influencers.write`.",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": {
+            "schema": { "$ref": "#/components/schemas/DeleteInfluencerCost" },
+            "example": { "cost_id": "vFpN45RsKp", "frequency": "monthly" }
+          } }
+        },
+        "responses": {
+          "200": { "description": "Custo removido", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Success" } } } },
+          "400": { "description": "Custo inexistente", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "500": { "description": "Erro interno do servidor", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/influencers/coupons": {
+      "post": {
+        "summary": "Adicionar cupons a uma campanha",
+        "operationId": "createInfluencerCoupons",
+        "description": "Adiciona cupons a uma campanha de influenciador (`campaign_id` obrigatório). Valida sobreposição de período do mesmo cupom. Requer o escopo `influencers.write`.",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": {
+            "schema": { "$ref": "#/components/schemas/CreateInfluencerCoupons" },
+            "example": { "name": "Duda Raiz", "campaign": "Lançamento Verão", "campaign_id": "N93ys5", "coupons": [ { "cupom": "DUDA20", "start_date": "2026-09-01", "end_date": "2026-09-30" } ] }
+          } }
+        },
+        "responses": {
+          "200": { "description": "Cupons criados", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Success" } } } },
+          "400": { "description": "Erro de validação", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "409": { "description": "Conflito de período de cupom", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "500": { "description": "Erro interno do servidor", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      },
+      "delete": {
+        "summary": "Remover cupom de uma campanha",
+        "operationId": "deleteInfluencerCoupon",
+        "description": "Remove um cupom de uma campanha (`campaign_id` + `cupom`). Requer o escopo `influencers.write`.",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": {
+            "schema": { "$ref": "#/components/schemas/DeleteInfluencerCoupon" },
+            "example": { "campaign_id": "N93ys5", "cupom": "DUDA20" }
+          } }
+        },
+        "responses": {
+          "200": { "description": "Cupom removido", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/InfluencerDeleteResponse" } } } },
+          "207": { "description": "Remoção parcial", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/InfluencerDeleteResponse" } } } },
+          "500": { "description": "Erro interno do servidor", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
     }
   },
   "components": {
@@ -367,6 +597,11 @@
             "enum": [0, 1, 2, 3],
             "example": 0
           },
+          "isFirstOrder": {
+            "description": "Indica se este é o primeiro pedido do cliente. Opcional: quando omitido, a Solomon infere a primeira compra a partir do histórico. Envie explicitamente quando a sua plataforma já souber essa informação.",
+            "type": "boolean",
+            "example": true
+          },
           "customer": {
             "description": "Cliente que fez o pedido",
             "type": "object",
@@ -426,6 +661,13 @@
               "updatedAt": {
                 "description": "Data de atualização do cliente",
                 "type": "string"
+              },
+              "birthdate": {
+                "description": "Data de nascimento do cliente (opcional). Formato ISO `YYYY-MM-DD`.",
+                "type": "string",
+                "format": "date",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                "example": "1990-05-21"
               }
             }
           },
@@ -591,6 +833,312 @@
               }
             }
           }
+        }
+      },
+      "CostEntry": {
+        "type": "object",
+        "description": "Um custo adicional como armazenado.",
+        "properties": {
+          "name": { "type": "string" },
+          "date": { "type": "string", "description": "Data inicial (ISO `YYYY-MM-DD`)" },
+          "end_date": { "type": "string", "description": "Data final (ISO `YYYY-MM-DD`) ou vazio" },
+          "status": { "type": "string", "enum": ["active", "inactive"] },
+          "type": { "type": "string", "example": "marketing" },
+          "value": { "type": "number", "example": 3500.0 },
+          "utm_source": { "type": "string" }
+        }
+      },
+      "AdditionalCost": {
+        "type": "object",
+        "required": ["name", "date", "status", "type", "value", "frequency"],
+        "properties": {
+          "additional_cost_id": { "type": "string", "maxLength": 10, "description": "ID do custo (até 10 caracteres). Opcional no POST (gerado quando ausente); obrigatório no PUT." },
+          "name": { "type": "string", "description": "Nome/descrição do custo" },
+          "date": { "type": "string", "format": "date", "pattern": "^\\d{4}-\\d{2}-\\d{2}$", "description": "Data inicial", "example": "2026-08-01" },
+          "end_date": { "type": "string", "format": "date", "description": "Data final (opcional; vazio projeta até hoje)" },
+          "status": { "type": "string", "enum": ["active", "inactive"] },
+          "type": { "type": "string", "description": "Tipo do custo (ex.: `marketing`, `product`, `aluguel`, `plataformas`, `outros`). `marketing` e `product` recalculam métricas.", "example": "marketing" },
+          "value": { "type": "number", "description": "Valor do custo", "example": 3500.0 },
+          "frequency": { "type": "string", "enum": ["specific", "daily", "weekly", "monthly"], "description": "Frequência do custo. `specific` = pontual." },
+          "utm_source": { "type": "string", "description": "Canal (opcional)" },
+          "old_frequency": { "type": "string", "enum": ["specific", "daily", "weekly", "monthly"], "description": "Apenas no PUT: frequência anterior, quando ela mudou." }
+        }
+      },
+      "DeleteCost": {
+        "type": "object",
+        "required": ["additional_cost_id", "frequency"],
+        "properties": {
+          "additional_cost_id": { "type": "string" },
+          "frequency": { "type": "string", "enum": ["specific", "daily", "weekly", "monthly"] }
+        }
+      },
+      "CostsListResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean" },
+          "data": {
+            "type": "object",
+            "description": "Buckets por frequência; cada um é um mapa `cost_id` → custo.",
+            "properties": {
+              "monthly": { "type": "object", "additionalProperties": { "$ref": "#/components/schemas/CostEntry" } },
+              "weekly": { "type": "object", "additionalProperties": { "$ref": "#/components/schemas/CostEntry" } },
+              "daily": { "type": "object", "additionalProperties": { "$ref": "#/components/schemas/CostEntry" } },
+              "specific": { "type": "object", "additionalProperties": { "$ref": "#/components/schemas/CostEntry" } }
+            }
+          },
+          "request_id": { "type": "string" },
+          "timestamp": { "type": "string" }
+        }
+      },
+      "CostMutationResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean" },
+          "data": {
+            "type": "object",
+            "properties": {
+              "created": { "$ref": "#/components/schemas/CostEntry" },
+              "data": { "type": "object", "description": "Bucket resultante da frequência", "additionalProperties": { "$ref": "#/components/schemas/CostEntry" } }
+            }
+          },
+          "request_id": { "type": "string" },
+          "timestamp": { "type": "string" }
+        }
+      },
+      "ProjectedCostRow": {
+        "type": "object",
+        "description": "Linha diária projetada de um custo.",
+        "properties": {
+          "cost_id": { "type": "string" },
+          "company_id": { "type": "string" },
+          "frequency": { "type": "integer", "description": "Enum inteiro: 0=specific, 1=daily, 2=weekly, 3=monthly" },
+          "name": { "type": "string" },
+          "value": { "type": "number" },
+          "type": { "type": "string" },
+          "date": { "type": "string", "format": "date" },
+          "utm_source": { "type": "string" }
+        }
+      },
+      "CostHistoryResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean" },
+          "data": { "type": "array", "items": { "$ref": "#/components/schemas/ProjectedCostRow" } },
+          "request_id": { "type": "string" },
+          "timestamp": { "type": "string" }
+        }
+      },
+      "CostInput": {
+        "type": "object",
+        "required": ["start_date"],
+        "description": "Custo de influenciador. Deve ter ao menos uma taxa diferente de zero (`fixed_fee`, `var_fee` ou `value`).",
+        "properties": {
+          "fixed_fee": { "type": "number", "description": "Comissão fixa (R$)" },
+          "var_fee": { "type": "number", "description": "Comissão variável (%)" },
+          "value": { "type": "number", "description": "Valor por entrega (R$). Quando > 0, exige `frequency` e entra nos custos de marketing." },
+          "start_date": { "type": "string", "format": "date", "description": "Data inicial (obrigatória)" },
+          "end_date": { "type": "string", "format": "date", "description": "Data final (opcional)" },
+          "frequency": { "type": "string", "enum": ["specific", "daily", "weekly", "monthly"] },
+          "is_campaign_cost": { "type": "boolean", "description": "true = custo de campanha (exige `campaign_id`); false = custo de nível influenciador." },
+          "is_coupon_cost": { "type": "boolean", "description": "true = atribuição por cupom; false = por cupom + link." }
+        }
+      },
+      "CouponInput": {
+        "type": "object",
+        "required": ["cupom"],
+        "properties": {
+          "cupom": { "type": "string", "description": "Código do cupom (armazenado em maiúsculas)" },
+          "start_date": { "type": "string", "format": "date" },
+          "end_date": { "type": "string", "format": "date" }
+        }
+      },
+      "CreateInfluencer": {
+        "type": "object",
+        "required": ["name", "links"],
+        "properties": {
+          "name": { "type": "string", "description": "Nome do influenciador (usado como `utm_campaign`)" },
+          "campaign": { "type": "string", "description": "Nome da campanha (usado como `utm_content`)" },
+          "category": { "type": "string", "example": "influencer" },
+          "campaign_id": { "type": "string", "description": "Opcional; gerado quando ausente." },
+          "links": { "type": "array", "minItems": 1, "items": { "type": "object", "required": ["url"], "properties": { "url": { "type": "string", "format": "uri", "description": "URL de destino (HTTPS, host público)" } } } },
+          "coupons": { "type": "array", "items": { "$ref": "#/components/schemas/CouponInput" } },
+          "costs": { "type": "array", "items": { "$ref": "#/components/schemas/CostInput" } }
+        }
+      },
+      "UpdateInfluencer": {
+        "type": "object",
+        "required": ["name", "category"],
+        "properties": {
+          "name": { "type": "string" },
+          "category": { "type": "string" }
+        }
+      },
+      "DeleteInfluencer": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string" },
+          "campaign_id": { "type": "string", "description": "Campanha a remover (quando `short_code` ausente)" },
+          "short_code": { "type": "string", "description": "Quando presente, remove apenas este link." },
+          "delete_influencer": { "type": "boolean", "description": "Quando true, remove o influenciador inteiro (custos por nome + cadastro)." }
+        }
+      },
+      "ShortUrlsResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean" },
+          "data": { "type": "array", "items": { "type": "string" }, "description": "URLs curtas geradas para os links.", "example": ["track.solomon.com.br/nUzKKX"] },
+          "request_id": { "type": "string" },
+          "timestamp": { "type": "string" }
+        }
+      },
+      "InfluencerCostRead": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "description": "cost_id" },
+          "level": { "type": "string", "enum": ["campanha", "influenciador"] },
+          "attribution": { "type": "string", "enum": ["cupom", "cupom_link"] },
+          "config": {
+            "type": "object",
+            "properties": {
+              "porEntrega": { "type": "object", "properties": { "value": { "type": "number" }, "frequency": { "type": "string", "description": "Rótulo pt: pontual|diario|semanal|mensal" } } },
+              "comissaoFixa": { "type": "object", "properties": { "value": { "type": "number" } } },
+              "comissaoVariavel": { "type": "object", "properties": { "percentage": { "type": "number" } } }
+            }
+          },
+          "startDate": { "type": "string", "nullable": true },
+          "endDate": { "type": "string", "nullable": true },
+          "campaignId": { "type": "string", "description": "Presente quando `level` = campanha." }
+        }
+      },
+      "Influencer": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "description": "influencer_cost_id" },
+          "name": { "type": "string" },
+          "category": { "type": "string" },
+          "campaigns": { "type": "array", "items": { "type": "object", "properties": { "id": { "type": "string" }, "name": { "type": "string" } } } },
+          "links": { "type": "array", "items": { "type": "object", "properties": { "id": { "type": "string", "description": "short_code" }, "campaignId": { "type": "string" }, "url": { "type": "string" }, "short_url": { "type": "string" } } } },
+          "coupons": { "type": "array", "items": { "type": "object", "properties": { "id": { "type": "string" }, "campaignId": { "type": "string" }, "code": { "type": "string" }, "startDate": { "type": "string", "nullable": true }, "endDate": { "type": "string", "nullable": true } } } },
+          "costs": { "type": "array", "items": { "$ref": "#/components/schemas/InfluencerCostRead" } }
+        }
+      },
+      "InfluencersListResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean" },
+          "data": { "type": "array", "items": { "$ref": "#/components/schemas/Influencer" } },
+          "request_id": { "type": "string" },
+          "timestamp": { "type": "string" }
+        }
+      },
+      "InfluencerDeleteResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean" },
+          "data": {
+            "type": "object",
+            "properties": {
+              "message": { "type": "string" },
+              "data": { "type": "array", "items": { "type": "object", "properties": { "message": { "type": "string" }, "status": { "type": "integer" } } } }
+            }
+          },
+          "request_id": { "type": "string" },
+          "timestamp": { "type": "string" }
+        }
+      },
+      "InfluencerCostDetail": {
+        "type": "object",
+        "properties": {
+          "cost_id": { "type": "string" },
+          "fixed_fee": { "type": "number", "nullable": true },
+          "var_fee": { "type": "number", "nullable": true },
+          "start_date": { "type": "string", "nullable": true },
+          "end_date": { "type": "string", "nullable": true },
+          "frequency": { "type": "string", "nullable": true },
+          "value": { "type": "number", "nullable": true },
+          "campaign_cost_id": { "type": "string", "nullable": true },
+          "campaign": { "type": "string", "nullable": true },
+          "is_campaign_cost": { "type": "boolean", "nullable": true },
+          "is_coupon_cost": { "type": "boolean", "nullable": true }
+        }
+      },
+      "InfluencerCostGroup": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "influencer_cost_id": { "type": "string", "nullable": true },
+          "details": { "type": "array", "items": { "$ref": "#/components/schemas/InfluencerCostDetail" } }
+        }
+      },
+      "InfluencerCostsListResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean" },
+          "data": { "type": "array", "items": { "$ref": "#/components/schemas/InfluencerCostGroup" } },
+          "request_id": { "type": "string" },
+          "timestamp": { "type": "string" }
+        }
+      },
+      "CreateInfluencerCosts": {
+        "type": "object",
+        "required": ["influencers"],
+        "properties": {
+          "influencers": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": ["name", "costs"],
+              "properties": {
+                "name": { "type": "string" },
+                "influencer_cost_id": { "type": "string", "description": "Opcional; reusado/gerado quando ausente." },
+                "campaign_id": { "type": "string" },
+                "campaign": { "type": "string" },
+                "costs": { "type": "array", "minItems": 1, "items": { "$ref": "#/components/schemas/CostInput" } }
+              }
+            }
+          }
+        }
+      },
+      "InfluencerCostsMutationResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean" },
+          "data": {
+            "type": "object",
+            "properties": {
+              "data": { "type": "object", "description": "Mapa `cost_id` → custo criado.", "additionalProperties": { "$ref": "#/components/schemas/CostEntry" } }
+            }
+          },
+          "request_id": { "type": "string" },
+          "timestamp": { "type": "string" }
+        }
+      },
+      "DeleteInfluencerCost": {
+        "type": "object",
+        "required": ["cost_id", "frequency"],
+        "properties": {
+          "cost_id": { "type": "string" },
+          "frequency": { "type": "string", "enum": ["specific", "daily", "weekly", "monthly"] }
+        }
+      },
+      "CreateInfluencerCoupons": {
+        "type": "object",
+        "required": ["name", "campaign_id", "coupons"],
+        "properties": {
+          "name": { "type": "string" },
+          "campaign": { "type": "string" },
+          "campaign_id": { "type": "string" },
+          "coupons": { "type": "array", "items": { "$ref": "#/components/schemas/CouponInput" } }
+        }
+      },
+      "DeleteInfluencerCoupon": {
+        "type": "object",
+        "required": ["campaign_id", "cupom"],
+        "properties": {
+          "campaign_id": { "type": "string" },
+          "cupom": { "type": "string" }
         }
       }
     },

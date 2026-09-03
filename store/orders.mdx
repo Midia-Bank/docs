@@ -54,6 +54,22 @@ pois isso prejudica a análise de métodos de pagamento na plataforma.
 
 ---
 
+## Primeira compra e dados do cliente
+
+Dois campos opcionais enriquecem a análise de aquisição e do cliente:
+
+| Campo | Onde | Descrição |
+|-------|------|-----------|
+| `isFirstOrder` | pedido | Booleano que marca explicitamente o **primeiro pedido** do cliente. Quando omitido, a Solomon infere a primeira compra a partir do histórico — envie o valor quando a sua plataforma já souber. |
+| `customer.birthdate` | cliente | Data de nascimento do cliente, no formato ISO `YYYY-MM-DD`. |
+
+<Tip>
+Ambos são retrocompatíveis: integrações que não os enviam continuam funcionando sem mudança. Informe-os
+quando disponíveis para melhorar as análises de novos clientes e de perfil.
+</Tip>
+
+---
+
 ## Requisição
 
 A criação e atualização de pedidos são realizadas por meio de uma API REST utilizando o método `POST`.

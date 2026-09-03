@@ -45,10 +45,14 @@ e determinam quais ações podem ser executadas.
 
 Os escopos disponíveis atualmente são estes:
 
-| Escopo           | Descrição                                                                 |
-|------------------|---------------------------------------------------------------------------|
-| `orders.write`   | Permite criar e atualizar pedidos da loja via API                         |
-| `products.write`| Permite criar e atualizar produtos e variantes do catálogo da loja via API|
+| Escopo               | Descrição                                                                   |
+|----------------------|-----------------------------------------------------------------------------|
+| `orders.write`       | Permite criar e atualizar pedidos da loja via API                           |
+| `products.write`     | Permite criar e atualizar produtos e variantes do catálogo da loja via API  |
+| `costs.read`         | Permite listar os custos adicionais da loja via API                         |
+| `costs.write`        | Permite criar, editar e remover custos adicionais da loja via API           |
+| `influencers.read`   | Permite listar influenciadores e seus custos via API                        |
+| `influencers.write`  | Permite cadastrar e gerir influenciadores, campanhas, links, cupons e custos|
 
 <Info>Recomendamos sempre conceder apenas os escopos necessários para cada integração, reduzindo riscos
 e garantindo maior controle de auditoria sobre as operações realizadas.</Info>

@@ -1,0 +1,103 @@
+---
+title: 'Influenciadores'
+description: 'Cadastre influenciadores, campanhas, links, cupons e custos de comissão via API'
+---
+
+## Visão geral
+
+A Solomon acompanha o desempenho de campanhas com influenciadores cruzando **links rastreáveis** e
+**cupons** com os pedidos da loja, e atribuindo os **custos** de comissão a cada influenciador. Tudo
+isso pode ser cadastrado e mantido pela API.
+
+<Info>
+As rotas de influenciadores exigem os escopos `influencers.read` (leitura) e `influencers.write`
+(escrita) na sua [API Key](/authentication).
+</Info>
+
+## Modelo
+
+- **Influenciador** — identificado pelo `name`. É o nível mais alto; sobrevive mesmo sem campanhas.
+- **Campanha** (`campaign_id`) — agrupa links, cupons e custos de uma ação. Gerada automaticamente
+  quando você não informa uma.
+- **Link** (`short_code`) — uma URL de destino que a Solomon encurta (`short_url`) e instrumenta com
+  UTMs (`utm_source=Influenciador`, `utm_campaign=<nome>`, `utm_content=<campanha>`).
+- **Cupom** — código de desconto com período de validade, atribuído à campanha.
+- **Custo** — comissão fixa (R$), comissão variável (%) e/ou valor por entrega (R$) do influenciador.
+
+## Cadastro em uma requisição
+
+O [cadastro de influenciador](/api-reference/influencers/create-influencer) (`POST /influencers`) cria
+tudo de uma vez — links, cupons e custos:
+
+```bash
+curl -X POST https://admin-api.solomon.com.br/admin/v1/influencers \
+  -H "Authorization: Bearer SUA_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Duda Raiz",
+    "campaign": "Lançamento Verão",
+    "category": "influencer",
+    "links": [{ "url": "https://www.sualoja.com.br/verao" }],
+    "coupons": [{ "cupom": "DUDA10", "start_date": "2026-08-01", "end_date": "2026-08-31" }],
+    "costs": [{ "value": 500, "frequency": "monthly", "start_date": "2026-08-01", "end_date": "2026-08-31" }]
+  }'
+```
+
+A resposta traz as URLs curtas geradas para cada link.
+
+<Warning>
+As URLs de destino passam por validação de segurança: apenas **HTTPS**, sem credenciais embutidas e
+apontando para um **host público** (bloqueia endereços internos/privados). URLs inválidas retornam
+`400` com a lista de erros.
+</Warning>
+
+## Custos: comissão vs. valor
+
+Cada custo em `costs` combina até três componentes (ao menos um diferente de zero):
+
+- `fixed_fee` — comissão fixa em R$
+- `var_fee` — comissão variável em %
+- `value` — valor por entrega em R$
+
+`is_campaign_cost` define se o custo é da **campanha** (exige `campaign_id`) ou do **influenciador**;
+`is_coupon_cost` define a atribuição (`cupom` ou `cupom_link`).
+
+<Info>
+Custos com `value` maior que zero entram também nos custos de marketing da loja (como
+`influenciador`) e exigem `frequency`. Custos só de comissão (`fixed_fee`/`var_fee`) não precisam de
+`frequency`.
+</Info>
+
+Você pode gerir custos separadamente pelos endpoints
+[adicionar custos](/api-reference/influencers/create-influencer-costs) (`POST /influencers/costs`, em
+lote por influenciador) e [remover custo](/api-reference/influencers/delete-influencer-cost)
+(`DELETE /influencers/costs`). Custos de comissão com períodos sobrepostos para o mesmo influenciador
+são rejeitados.
+
+## Cupons
+
+Além de enviá-los no cadastro, cupons podem ser geridos por
+[adicionar cupons](/api-reference/influencers/create-influencer-coupons) (`POST /influencers/coupons`)
+e [remover cupom](/api-reference/influencers/delete-influencer-coupon) (`DELETE /influencers/coupons`).
+Cupons com o mesmo código e período sobreposto são rejeitados com `409`.
+
+## Exclusão granular
+
+O [DELETE de influenciadores](/api-reference/influencers/delete-influencer) (`DELETE /influencers`) tem
+três comportamentos:
+
+- Com `short_code` → remove **apenas aquele link**.
+- Sem `short_code`, com `campaign_id` → remove a **campanha** (links, cupons e custos de campanha). O
+  influenciador continua cadastrado.
+- Com `delete_influencer: true` → remove o **influenciador inteiro** (todos os custos por nome + o
+  cadastro).
+
+A resposta é `200` quando tudo é removido, ou `207` quando alguma operação falha (o corpo detalha cada
+operação).
+
+## Leitura
+
+- [Listar influenciadores](/api-reference/influencers/list-influencers) (`GET /influencers`) — estrutura
+  aninhada com campanhas, links, cupons e custos de cada influenciador.
+- [Listar custos de influenciadores](/api-reference/influencers/list-influencer-costs)
+  (`GET /influencers/costs`) — custos crus agrupados por influenciador.

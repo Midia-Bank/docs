@@ -30,6 +30,13 @@
             ]
           },
           {
+            "group": "Custos e influenciadores",
+            "pages": [
+              "management/costs",
+              "management/influencers"
+            ]
+          },
+          {
             "group": "Eventos do site",
             "pages": [
               "events/concepts",
@@ -56,6 +63,30 @@
               "api-reference/ingestion/create-order",
               "api-reference/ingestion/create-product"
             ]
+          },
+          {
+            "group": "Custos adicionais",
+            "pages": [
+              "api-reference/costs/list-costs",
+              "api-reference/costs/create-cost",
+              "api-reference/costs/update-cost",
+              "api-reference/costs/delete-cost",
+              "api-reference/costs/cost-history"
+            ]
+          },
+          {
+            "group": "Influenciadores",
+            "pages": [
+              "api-reference/influencers/list-influencers",
+              "api-reference/influencers/create-influencer",
+              "api-reference/influencers/update-influencer",
+              "api-reference/influencers/delete-influencer",
+              "api-reference/influencers/list-influencer-costs",
+              "api-reference/influencers/create-influencer-costs",
+              "api-reference/influencers/delete-influencer-cost",
+              "api-reference/influencers/create-influencer-coupons",
+              "api-reference/influencers/delete-influencer-coupon"
+            ]
           }
         ]
       },
@@ -65,7 +96,8 @@
           {
             "group": "Novidades",
             "pages": [
-              "changelog/plataforma"
+              "changelog/plataforma",
+              "changelog/api"
             ]
           }
         ]

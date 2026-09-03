@@ -1,0 +1,80 @@
+---
+title: 'Custos adicionais'
+description: 'Cadastre e mantenha custos manuais da operação (aluguel, plataformas, marketing) via API'
+---
+
+## Visão geral
+
+Além dos custos de produto enviados no [catálogo](/store/products), a sua operação tem custos que
+não vêm da loja: aluguel, ferramentas, contabilidade, investimento em mídia, etc. Esses **custos
+adicionais** podem ser cadastrados e mantidos pela API, do mesmo jeito que são geridos no dashboard.
+
+Cada custo pertence a uma **frequência** e é projetado em linhas diárias para compor as métricas de
+margem e de marketing da plataforma.
+
+<Info>
+As rotas de custos exigem os escopos `costs.read` (leitura) e `costs.write` (escrita) na sua
+[API Key](/authentication).
+</Info>
+
+## Frequências
+
+O campo `frequency` define como o custo se repete ao longo do período (`date` até `end_date`):
+
+| Valor | Significado |
+|-------|-------------|
+| `specific` | Pontual — um único lançamento na data inicial |
+| `daily` | Diário |
+| `weekly` | Semanal |
+| `monthly` | Mensal |
+
+Quando `end_date` é omitido, o custo é projetado até a data atual.
+
+## Tipos que afetam as métricas
+
+O campo `type` é livre (ex.: `aluguel`, `plataformas`, `contabilidade`, `outros`), mas dois tipos têm
+efeito especial e disparam o **recálculo automático** das métricas ao serem gravados:
+
+- `marketing` — entra na análise de marketing por canal (fonte `manual`)
+- `product` — entra no custo de produto
+
+<Tip>
+O recálculo é assíncrono. Após criar, editar ou remover um custo de `marketing`/`product`, os números
+podem levar alguns instantes para refletir na plataforma.
+</Tip>
+
+## Ciclo de vida
+
+O mesmo recurso cobre criar, listar, editar e remover:
+
+- [Criar custo](/api-reference/costs/create-cost) — `POST /costs`. Se você não informar
+  `additional_cost_id`, a Solomon gera um (até 10 caracteres).
+- [Listar custos](/api-reference/costs/list-costs) — `GET /costs`, agrupados por frequência.
+- [Histórico diário](/api-reference/costs/cost-history) — `GET /costs/historical?start=&end=`, as
+  linhas projetadas dia a dia.
+- [Atualizar custo](/api-reference/costs/update-cost) — `PUT /costs`. Informe `old_frequency` quando a
+  frequência mudar. A edição só recalcula as métricas quando muda algo que afeta os números
+  (valor, nome, datas ou frequência); alternar apenas o `status` não dispara recálculo.
+- [Remover custo](/api-reference/costs/delete-cost) — `DELETE /costs`.
+
+<Warning>
+`additional_cost_id` tem no máximo **10 caracteres**. Ao editar ou remover, use exatamente o mesmo id
+retornado na criação.
+</Warning>
+
+## Exemplo
+
+```bash
+curl -X POST https://admin-api.solomon.com.br/admin/v1/costs \
+  -H "Authorization: Bearer SUA_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Aluguel do galpão",
+    "date": "2026-08-01",
+    "end_date": "2026-12-31",
+    "status": "active",
+    "type": "aluguel",
+    "value": 3500.00,
+    "frequency": "monthly"
+  }'
+```
