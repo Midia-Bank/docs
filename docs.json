@@ -106,7 +106,8 @@
   },
   "logo": {
     "light": "/logo/light.png",
-    "dark": "/logo/dark.png"
+    "dark": "/logo/dark.png",
+    "href": "https://www.solomon.com.br/"
   },
   "navbar": {
     "links": [
@@ -139,5 +140,14 @@
       "github": "https://github.com/mintlify",
       "linkedin": "https://linkedin.com/company/mintlify"
     }
+  },
+  "background": {
+    "color": {
+      "light": "#f8f8f8",
+      "dark": "#0e1819"
+    }
+  },
+  "icons": {
+    "library": "lucide"
   }
 }
