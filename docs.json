@@ -131,7 +131,9 @@
      "perplexity",
      "mcp",
      "cursor",
-     "vscode"
+    "vscode",
+    "assistant",
+    "add-mcp"
    ]
   },
   "footer": {
@@ -147,5 +149,11 @@
   },
   "icons": {
     "library": "lucide"
+  },
+  "metadata": {
+    "timestamp": true
+  },
+  "interaction": {
+    "drilldown": true
   }
 }
