@@ -58,6 +58,9 @@
                 "browserIp": "189.45.123.10",
                 "cartToken": "cart_abcd1234",
                 "isFirstOrder": true,
+                "subscription": {
+                  "isRecurring": false
+                },
                 "customer": {
                   "customerId": "cus_987654321",
                   "name": "Cliente Teste",
@@ -601,6 +604,18 @@
             "description": "Indica se este é o primeiro pedido do cliente. Opcional: quando omitido, a Solomon infere a primeira compra a partir do histórico. Envie explicitamente quando a sua plataforma já souber essa informação.",
             "type": "boolean",
             "example": true
+          },
+          "subscription": {
+            "description": "Presente apenas em pedidos de assinatura. Omita o objeto para pedidos avulsos.",
+            "type": "object",
+            "required": ["isRecurring"],
+            "properties": {
+              "isRecurring": {
+                "description": "Distingue a aquisição da renovação da assinatura:\n * false - primeiro pedido da assinatura (aquisição)\n * true - renovação (cobrança recorrente)\n\nObrigatório quando o objeto `subscription` é enviado. Não altera o `isFirstOrder`, que deve ser enviado separadamente.",
+                "type": "boolean",
+                "example": false
+              }
+            }
           },
           "customer": {
             "description": "Cliente que fez o pedido",
