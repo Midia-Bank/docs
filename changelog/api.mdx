@@ -16,6 +16,26 @@ icon: "database-search"
   3. tags -> use "API", "Novidades", "Correções".
 */}
 
+<Update label="v1.1.1 description="23/09/2026" tags={["API", "Novidades"]}>
+  ## Pedidos de assinatura
+
+  Novo campo `subscription` no pedido para identificar pedidos de assinatura e distinguir a
+  **aquisição** (primeiro pedido da assinatura) da **renovação** (cobrança recorrente).
+
+  ### Novo campo de pedido
+  - `subscription` (objeto, opcional) — presente apenas em pedidos de assinatura; **omita** o objeto para pedidos avulsos.
+  - `subscription.isRecurring` (boolean, obrigatório quando `subscription` é enviado):
+    - `false` — primeiro pedido da assinatura (aquisição)
+    - `true` — renovação (cobrança recorrente)
+
+  ### Comportamento
+  - Independe de `isFirstOrder`: a aquisição de uma assinatura só entra em **Vendas (NC)** quando também for o primeiro pedido do cliente (`isFirstOrder: true`).
+  - Uma renovação (`isRecurring: true`) **não pode** vir com `isFirstOrder: true`.
+  - Retrocompatível: omitir `subscription` mantém o comportamento atual.
+
+  Veja [Pedidos](/store/orders).
+</Update>
+
 <Update label="v1.1.0" description="03/09/2026" tags={["API", "Novidades"]}>
   ## Custos adicionais, influenciadores e novos campos de pedido
 
