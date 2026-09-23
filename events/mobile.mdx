@@ -17,8 +17,9 @@ A inicialização do SDK requer os mesmos parâmetros do SDK web, com algumas ad
   Parâmetro opcional para ativar os logs de debug no console.
 </ResponseField>
 
-<ResponseField name="useTouchpoint" type="boolean">
-  Parâmetro opcional para ativar o envio desses eventos para o pixel.
+<ResponseField name="useTouchpoint" type="boolean" default="true">
+  Controla o envio dos eventos para o pixel, necessário para a atribuição. **Vem ligado por padrão** a
+  partir da v1.1.0 — defina `false` explicitamente para desativar.
 
   <Warning>A funcionalidade de atribuição só irá funcionar se os eventos forem enviados para o pixel.</Warning>
 </ResponseField>
@@ -46,12 +47,14 @@ npm install @solomon-tech/events-react-native @react-native-async-storage/async-
 <Step>
 Opcionalmente, instale as dependências nativas para telemetria completa do device.
 ```bash Terminal
-npm install react-native-device-info @react-native-community/netinfo react-native-install-referrer
+npm install react-native-device-info @react-native-community/netinfo react-native-install-referrer react-native-keychain
 ```
 
 <Tip>
   Essas dependências são opcionais. Sem elas o SDK funciona normalmente, mas campos como
   `device_id`, `device_model`, `connection_type` e `install_referrer` serão preenchidos com valores padrão.
+  Sem `react-native-keychain`, a identidade do usuário no iOS não sobrevive à reinstalação do app
+  (no Android a durabilidade já vem do identificador do device).
 </Tip>
 </Step>
 
