@@ -7,6 +7,8 @@ icon: "newspaper"
 mode: "default"
 ---
 
+import { ChangelogSubscribe } from "/snippets/changelog-subscribe.jsx";
+
 {/*
   Como adicionar uma novidade:
 
@@ -87,3 +89,8 @@ mode: "default"
 
   Você pode filtrar por área na lateral.
 </Update>
+
+<ChangelogSubscribe
+  webhookUrl="https://tech-solomon.app.n8n.cloud/webhook/changelog-subscribe"
+  accentColor="#19c27e"
+/>
