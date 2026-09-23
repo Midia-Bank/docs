@@ -1,7 +1,7 @@
 ---
 title: "Novidades da API"
 sidebarTitle: "API"
-description: "Versões, novos endpoints e mudanças da Solomon Admin API"
+description: "Versões, novos endpoints e mudanças da Solomon Admin API e dos SDKs"
 rss: true
 icon: "database-search"
 ---
@@ -12,11 +12,41 @@ icon: "database-search"
 
   Como adicionar uma release:
   1. Copie o bloco <Update> e cole no TOPO (mais recente primeiro).
-  2. label -> versão (ex.: "v1.1.0"). description -> data (dd/mm/aaaa).
-  3. tags -> use "API", "Novidades", "Correções".
+  2. label -> versão (ex.: "v1.1.0" ou "SDK Mobile v1.1.0"). description -> data (dd/mm/aaaa).
+  3. tags -> use "API", "SDK", "Tracking", "Novidades", "Correções".
 */}
 
-<Update label="v1.1.1 description="23/09/2026" tags={["API", "Novidades"]}>
+<Update label="SDK Mobile v1.1.0" description="23/09/2026" tags={["SDK", "Tracking", "Novidades"]}>
+  ## SDK React Native: atribuição de app
+
+  O [SDK Mobile](/events/mobile) (`@solomon-tech/events-react-native`) ganhou o essencial de
+  atribuição de aplicativos, alinhado ao rastreamento web.
+
+  ### Novidades
+  - **`APP_INSTALL` / `APP_REINSTALL`** — emitidos automaticamente na primeira abertura após instalar ou
+    reinstalar o app.
+  - **Identidade durável no iOS** — o identificador do usuário passa a ser guardado de maneira durável,
+    sobrevivendo à reinstalação do app.
+
+  ### Mudança de comportamento
+  - **`useTouchpoint` agora vem ligado por padrão.** A atribuição funciona ao atualizar, sem configuração
+    extra. Para manter o comportamento anterior, defina `useTouchpoint: false` explicitamente.
+  - O `referrer` dos eventos deixou de carregar o nome da tela interna do app, evitando poluir o canal
+    **Orgânico**. A atribuição continua vindo por `utm_*` / `sol_*`.
+
+  ### Atualização
+  ```bash Terminal
+  npm install @solomon-tech/events-react-native@1.1.0
+  ```
+  Para identidade durável no iOS, instale a dependência opcional e rode os pods:
+  ```bash Terminal
+  npm install react-native-keychain && cd ios && pod install && cd ..
+  ```
+
+  Veja o guia do [SDK Mobile](/events/mobile).
+</Update>
+
+<Update label="v1.1.1" description="23/09/2026" tags={["API", "Novidades"]}>
   ## Pedidos de assinatura
 
   Novo campo `subscription` no pedido para identificar pedidos de assinatura e distinguir a
