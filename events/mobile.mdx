@@ -33,6 +33,17 @@ A inicialização do SDK requer os mesmos parâmetros do SDK web, com algumas ad
   A interface exige três métodos: `getItem`, `setItem` e `removeItem`, todos retornando `Promise`.
 </ResponseField>
 
+<ResponseField name="onDeepLink" type="function">
+  Callback opcional chamado quando um link da Solomon (`l.solomon.com.br/...`) é aberto e resolvido.
+  Recebe `(deepLinkValue, params)` — use o **`deepLinkValue`** para rotear o usuário até a tela certa
+  dentro do app. Essencial para os App Links / Universal Links (ver o guia de [App Links](/events/app-links)).
+</ResponseField>
+
+<ResponseField name="linkDomain" type="string" default="l.solomon.com.br">
+  Domínio dos links da Solomon. Deep links desse host são resolvidos automaticamente no servidor
+  (utm + deep link + click_id). Só altere se usar um domínio de link customizado.
+</ResponseField>
+
 ## Instalação
 
 <Steps>
@@ -104,6 +115,12 @@ export function SolomonProvider({ children }: { children: React.ReactNode }) {
       debug: true,
       useTouchpoint: true,
       appIdentifier: 'com.suaempresa.app',
+      // Chamado quando um link da Solomon abre o app — use para rotear a tela.
+      onDeepLink: (deepLinkValue) => {
+        if (deepLinkValue) {
+          // ex.: navigation.navigate(...) com base no deepLinkValue
+        }
+      },
     });
 
     setSdk(instance);
@@ -249,6 +266,15 @@ function DeepLinkHandler() {
   return null;
 }
 ```
+
+<Info>
+  Para os **links da Solomon** (`l.solomon.com.br/...`, criados em Integrações → App Links), o SDK
+  **resolve o link no servidor automaticamente** ao recebê-lo: recupera a UTM, o `click_id` e o
+  **deep link value** (a rota in-app), mesmo quando esses dados não vêm na URL. É por isso que você
+  define o `onDeepLink` na inicialização — é nele que o `deepLinkValue` chega para você rotear a tela.
+  Para o app abrir esses links direto (sem passar pelo navegador), configure os App Links / Universal
+  Links — ver o guia de [App Links](/events/app-links).
+</Info>
 
 <Note>
   Os parâmetros de UTM extraídos de deep links são persistidos no device e enviados em todos os eventos subsequentes,
