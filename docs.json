@@ -42,7 +42,8 @@
               "events/concepts",
               "events/events",
               "events/web",
-              "events/mobile"
+              "events/mobile",
+              "events/app-links"
             ]
           }
         ]

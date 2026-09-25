@@ -1,0 +1,154 @@
+---
+title: "App Links"
+description: "Crie links que abrem direto no seu app e atribuem a jornada mobile"
+---
+
+Os **App Links** da Solomon são links curtos (`l.solomon.com.br/...`) que, quando o app está instalado,
+abrem **direto no aplicativo** (via Universal Links no iOS / App Links no Android) — levando o usuário à
+tela certa e atribuindo a origem do tráfego (mídia paga, influenciador ou canais próprios). Quando o app
+**não** está instalado, o link manda para a loja (App Store / Play) e a atribuição é costurada na
+instalação.
+
+Esta página cobre a configuração **do lado do cliente**. O arquivo de associação (`.well-known`) é servido
+pela própria Solomon — você **não precisa hospedar nada**; só declarar a associação no seu app.
+
+<Steps>
+
+<Step title="Cadastre o app na Solomon">
+No dashboard, em **Integrações → App Links → seletor de app → "＋ Criar novo app"** (ou em
+**Configurações → Aplicativo**), preencha os dados do app. Onde encontrar cada informação:
+
+<AccordionGroup>
+
+<Accordion title="iOS — Team ID, Bundle ID e App Store ID">
+- **Team ID** (10 caracteres, ex.: `ABCDE12345`): Apple Developer → [Membership](https://developer.apple.com/account) → "Team ID". Ou no Xcode: target → **Signing & Capabilities** → Team.
+- **Bundle ID** (ex.: `com.suaempresa.app`): Expo → `app.json` em `ios.bundleIdentifier`; bare RN → Xcode → target → **General** → Bundle Identifier.
+- **App Store ID** (numérico): pegue da URL da App Store `apps.apple.com/app/id`**`123456789`** (o número após `id`), ou no App Store Connect → App Information → "Apple ID".
+</Accordion>
+
+<Accordion title="Android — Package e SHA-256 fingerprints">
+- **Package** (ex.: `com.suaempresa.app`): Expo → `app.json` em `android.package`; bare RN → `android/app/build.gradle` em `applicationId`; ou da URL da Play `...details?id=`**`com.suaempresa.app`**.
+- **SHA-256 fingerprints** — informe **os dois**:
+  1. **Play App Signing** (obrigatório para apps na Play): Google Play Console → o app → **Configuração → Integridade do app** → **Assinatura de apps** → copie a "Impressão digital do certificado SHA-256".
+  2. **Chave de upload/release**: Expo/EAS → `eas credentials` (Android); bare RN → `keytool -list -v -keystore <sua-keystore>.jks -alias <alias>` (linha `SHA256`).
+
+  <Warning>Formato `AA:BB:CC:...:ZZ` (hex maiúsculo separado por `:`). Sem o fingerprint do **Play App Signing**, os App Links quebram em apps distribuídos pela Play Store.</Warning>
+</Accordion>
+
+<Accordion title="Store URLs (fallback 'app não instalado')">
+- **App Store URL** e **Play Store URL** das páginas do app nas lojas. É para onde o link manda quando o app ainda não está instalado.
+</Accordion>
+
+</AccordionGroup>
+
+Você pode cadastrar **iOS, Android ou ambos**.
+</Step>
+
+<Step title="Declare a associação de domínio no app">
+Isso é o que autoriza o SO a abrir os links `l.solomon.com.br/...` direto no seu app.
+
+<Tabs>
+
+<Tab title="iOS — Associated Domains">
+Adicione o domínio como Associated Domain com o prefixo `applinks:`.
+
+**Expo** (`app.json`):
+```json app.json
+{
+  "expo": {
+    "ios": {
+      "associatedDomains": ["applinks:l.solomon.com.br"]
+    }
+  }
+}
+```
+
+**Bare React Native**: Xcode → target → **Signing & Capabilities** → **Associated Domains** → adicione `applinks:l.solomon.com.br` (habilite a capability no App ID no Apple Developer).
+
+<Note>A Apple busca o arquivo de associação pela CDN dela e cacheia — após cadastrar um app novo, a associação pode levar **algumas horas** para ativar no iOS.</Note>
+</Tab>
+
+<Tab title="Android — App Links">
+Adicione um `intent-filter` com `autoVerify` para o domínio.
+
+**Expo** (`app.json`):
+```json app.json
+{
+  "expo": {
+    "android": {
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [{ "scheme": "https", "host": "l.solomon.com.br" }],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
+    }
+  }
+}
+```
+
+**Bare React Native** (`AndroidManifest.xml`, dentro da `<activity>` principal):
+```xml AndroidManifest.xml
+<intent-filter android:autoVerify="true">
+  <action android:name="android.intent.action.VIEW" />
+  <category android:name="android.intent.category.DEFAULT" />
+  <category android:name="android.intent.category.BROWSABLE" />
+  <data android:scheme="https" android:host="l.solomon.com.br" />
+</intent-filter>
+```
+
+<Note>A verificação usa os **SHA-256 fingerprints** cadastrados. Se não baterem com a assinatura do app, o Android não verifica e o link abre no navegador em vez do app.</Note>
+</Tab>
+
+</Tabs>
+</Step>
+
+<Step title="Instale e configure o SDK">
+Siga o guia do [SDK Mobile](/events/mobile) para instalar e inicializar o SDK. Dois pontos essenciais
+para os App Links:
+
+- Defina o **`onDeepLink`** na inicialização — é nele que chega o `deepLinkValue` (a rota in-app) para
+  você navegar o usuário até a tela certa.
+- Fie o tratamento de deep links (hook `useSolomonDeepLinks` ou `Linking` manual).
+
+```tsx
+const instance = new SolomonSDK({
+  companyId: 'SEU_COMPANY_ID',
+  useTouchpoint: true,
+  onDeepLink: (deepLinkValue) => {
+    if (deepLinkValue) {
+      // ex.: navigation.navigate(...) a partir do deepLinkValue
+    }
+  },
+});
+```
+
+Ao abrir um link da Solomon com o app instalado, o SDK **resolve o link no servidor** automaticamente
+(recupera UTM + `click_id` + `deepLinkValue`, que não viajam na URL) e chama o seu `onDeepLink`.
+</Step>
+
+<Step title="Crie os links">
+No dashboard, em **Integrações → App Links → Criar link**: escolha o **app**, o **destino** (Mídia Paga,
+Influenciador ou Outro) e os parâmetros. O link `l.solomon.com.br/<slug>` é gerado automaticamente.
+</Step>
+
+</Steps>
+
+## Como a atribuição se comporta
+
+A UTM do link depende do **destino**:
+
+| Destino | De onde vem a UTM |
+| :-- | :-- |
+| **Mídia Paga** | Da própria plataforma (Meta/Google), enxertada na URL do anúncio (`?utm_source=...&utm_campaign=...`). |
+| **Influenciador** | Do influenciador e campanha selecionados (schema de influencer links da Solomon). |
+| **Outro** (CRM, email, bio…) | Do canal e campanha que você define na criação do link. |
+
+E o comportamento por estado do app:
+
+- **App instalado**: o SO abre o app direto (Universal / App Link); o SDK resolve o link no servidor e
+  entrega UTM + `deepLinkValue` ao `onDeepLink`.
+- **App não instalado**: o link manda para a loja; no primeiro open a atribuição é costurada pela
+  instalação.
