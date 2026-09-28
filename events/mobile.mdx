@@ -1,11 +1,20 @@
 ---
 title: "Mobile"
-description: "Conecte o app React Native da sua loja à Solomon"
+description: "Conecte o app React Native ou Flutter da sua loja à Solomon"
 ---
 
-O SDK React Native da Solomon permite rastrear os mesmos 8 eventos de funil do SDK web, enviando dados
-idênticos para o backend — sem necessidade de qualquer alteração no servidor. Ele foi projetado para
-funcionar tanto em projetos **bare React Native** quanto em **Expo managed workflow**.
+Os SDKs mobile da Solomon permitem rastrear os mesmos 8 eventos de funil do SDK web, enviando dados
+**idênticos** para o backend — sem necessidade de qualquer alteração no servidor. Estão disponíveis para
+**React Native** (bare e Expo managed) e **Flutter/Dart**.
+
+<CardGroup cols={2}>
+  <Card title="React Native" icon="react" href="https://www.npmjs.com/package/@solomon-tech/events-react-native">
+    Pacote `@solomon-tech/events-react-native` no npm.
+  </Card>
+  <Card title="Flutter" icon="flutter" href="https://pub.dev/packages/solomon_events">
+    Pacote `solomon_events` no pub.dev.
+  </Card>
+</CardGroup>
 
 A inicialização do SDK requer os mesmos parâmetros do SDK web, com algumas adições específicas para mobile.
 
@@ -18,8 +27,8 @@ A inicialização do SDK requer os mesmos parâmetros do SDK web, com algumas ad
 </ResponseField>
 
 <ResponseField name="useTouchpoint" type="boolean" default="true">
-  Controla o envio dos eventos para o pixel, necessário para a atribuição. **Vem ligado por padrão** a
-  partir da v1.1.0 — defina `false` explicitamente para desativar.
+  Controla o envio dos eventos para o pixel, necessário para a atribuição. **Vem ligado por padrão** —
+  defina `false` explicitamente para desativar.
 
   <Warning>A funcionalidade de atribuição só irá funcionar se os eventos forem enviados para o pixel.</Warning>
 </ResponseField>
@@ -29,8 +38,9 @@ A inicialização do SDK requer os mesmos parâmetros do SDK web, com algumas ad
 </ResponseField>
 
 <ResponseField name="storage" type="StorageAdapter">
-  Parâmetro opcional para substituir o `AsyncStorage` padrão por um adapter customizado (ex: MMKV).
-  A interface exige três métodos: `getItem`, `setItem` e `removeItem`, todos retornando `Promise`.
+  Parâmetro opcional para substituir o storage padrão (`AsyncStorage` no React Native, `SharedPreferences`
+  no Flutter) por um adapter customizado. A interface exige três métodos — `getItem`, `setItem` e
+  `removeItem` — todos assíncronos.
 </ResponseField>
 
 <ResponseField name="onDeepLink" type="function">
@@ -44,7 +54,15 @@ A inicialização do SDK requer os mesmos parâmetros do SDK web, com algumas ad
   (utm + deep link + click_id). Só altere se usar um domínio de link customizado.
 </ResponseField>
 
+<Note>
+  No Flutter esses mesmos parâmetros são passados via `SolomonConfig` na construção do `SolomonSDK`.
+</Note>
+
 ## Instalação
+
+<Tabs>
+
+<Tab title="React Native">
 
 <Steps>
 
@@ -92,7 +110,44 @@ cd ios && pod install && cd ..
   ```
 </Note>
 
+</Tab>
+
+<Tab title="Flutter">
+
+<Steps>
+
+<Step>
+Adicione o pacote ao projeto.
+```bash Terminal
+flutter pub add solomon_events
+```
+</Step>
+
+<Step>
+No iOS, os pods são instalados automaticamente no próximo `flutter run`/`flutter build`. Se necessário,
+force manualmente:
+```bash Terminal
+cd ios && pod install && cd ..
+```
+</Step>
+
+</Steps>
+
+<Tip>
+  Diferente do React Native, o SDK Flutter **já traz todas as dependências nativas** (device info,
+  connectivity, secure storage, install referrer e app_links). Não há passo de instalação opcional —
+  a telemetria completa do device funciona out of the box.
+</Tip>
+
+</Tab>
+
+</Tabs>
+
 ## Inicialização
+
+<Tabs>
+
+<Tab title="React Native">
 
 O padrão recomendado é criar um contexto React para disponibilizar o SDK em toda a aplicação.
 
@@ -164,11 +219,78 @@ export default function App() {
 
 </Steps>
 
+</Tab>
+
+<Tab title="Flutter">
+
+Crie a instância do SDK no `main()` e envolva o app com `SolomonDeepLinks` (captura os deep links) e o
+`SolomonNavigatorObserver` (rastreia telas).
+
+<Steps>
+
+<Step>
+Inicialize o SDK antes de rodar o app.
+```dart main.dart
+import 'package:flutter/material.dart';
+import 'package:solomon_events/solomon_events.dart';
+
+late final SolomonSDK solomon;
+
+void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  solomon = SolomonSDK(SolomonConfig(
+    companyId: 'SEU_COMPANY_ID',
+    debug: true,
+    useTouchpoint: true,
+    appIdentifier: 'com.suaempresa.app',
+    // Chamado quando um link da Solomon abre o app — use para rotear a tela.
+    onDeepLink: (deepLinkValue, params) {
+      if (deepLinkValue.isNotEmpty) {
+        // ex.: navigator.pushNamed(...) com base no deepLinkValue
+      }
+    },
+  ));
+
+  runApp(const MyApp());
+}
+```
+</Step>
+
+<Step>
+Envolva o `MaterialApp` com `SolomonDeepLinks` e registre o observer de navegação.
+```dart MyApp.dart
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return SolomonDeepLinks(
+      sdk: solomon,
+      child: MaterialApp(
+        navigatorObservers: [SolomonNavigatorObserver(solomon)],
+        home: const HomePage(),
+      ),
+    );
+  }
+}
+```
+</Step>
+
+</Steps>
+
+</Tab>
+
+</Tabs>
+
 ## Rastreamento de telas
 
-Para o SDK saber qual tela o usuário está visualizando, a configuração pode ser
-feita manualmente ou utilizando React Navigation.
+Para o SDK saber qual tela o usuário está visualizando, a configuração pode ser feita manualmente ou
+automaticamente pelo roteador de navegação.
 
+<Tabs>
+
+<Tab title="React Native">
 
 ### Manualmente
 
@@ -221,12 +343,55 @@ export default function App() {
 }
 ```
 
+</Tab>
+
+<Tab title="Flutter">
+
+### Manualmente
+
+Chame `setScreenName` sempre que o usuário navegar para uma nova tela.
+
+```dart product_screen.dart
+class _ProductScreenState extends State<ProductScreen> {
+  @override
+  void initState() {
+    super.initState();
+    solomon.setScreenName('ProductScreen');
+    solomon.track(SolomonEvent.viewPage);
+  }
+
+  // ...
+}
+```
+
+### Com o NavigatorObserver
+
+Se você registrou o `SolomonNavigatorObserver` no `MaterialApp` (ver Inicialização), o nome da tela é
+atualizado automaticamente pelo `name` de cada rota (`RouteSettings.name`). O disparo de `VIEW_PAGE`
+continua sendo responsabilidade de cada tela.
+
+```dart
+MaterialApp(
+  navigatorObservers: [SolomonNavigatorObserver(solomon)],
+  // Use rotas nomeadas para o observer capturar o nome da tela:
+  onGenerateRoute: (settings) { /* ... */ },
+);
+```
+
+</Tab>
+
+</Tabs>
+
 ## Deep links e UTMs
 
 Para que a detecção de pontos de contato funcione corretamente, o SDK precisa ler os **deep links** —
 URLs que abrem o app diretamente (ex: `https://sualoja.com/produto?utm_source=google&utm_medium=cpc`).
 
-Você pode configurar manualmente ou utilizar o hook disponibilizado dentro do pacote.
+Você pode configurar manualmente ou utilizar o wrapper disponibilizado dentro do pacote.
+
+<Tabs>
+
+<Tab title="React Native">
 
 ### Manualmente
 
@@ -267,6 +432,44 @@ function DeepLinkHandler() {
 }
 ```
 
+</Tab>
+
+<Tab title="Flutter">
+
+### Com o widget
+
+O jeito recomendado é envolver o app com `SolomonDeepLinks` (ver Inicialização) — ele já trata o link
+inicial e o stream de links via `app_links`, chamando `handleDeepLink` automaticamente.
+
+```dart
+SolomonDeepLinks(
+  sdk: solomon,
+  child: MaterialApp(/* ... */),
+);
+```
+
+### Manualmente
+
+Se preferir controlar você mesmo, use o `app_links` e chame `handleDeepLink`:
+
+```dart
+import 'package:app_links/app_links.dart';
+
+final appLinks = AppLinks();
+
+// Link que abriu o app (cold start)
+appLinks.getInitialLink().then((uri) {
+  if (uri != null) solomon.handleDeepLink(uri.toString());
+});
+
+// Links recebidos com o app aberto
+appLinks.uriLinkStream.listen((uri) => solomon.handleDeepLink(uri.toString()));
+```
+
+</Tab>
+
+</Tabs>
+
 <Info>
   Para os **links da Solomon** (`l.solomon.com.br/...`, criados em Integrações → App Links), o SDK
   **resolve o link no servidor automaticamente** ao recebê-lo: recupera a UTM, o `click_id` e o
@@ -284,6 +487,10 @@ function DeepLinkHandler() {
 ## Disparando eventos
 
 A chamada `track` funciona de forma idêntica ao SDK web. Os mesmos 8 tipos de evento estão disponíveis.
+
+<Tabs>
+
+<Tab title="React Native">
 
 <Steps>
 
@@ -326,6 +533,55 @@ Os campos disponíveis em `aliases` são: `email`, `phone`, `user_id`, `customer
 
 </Steps>
 
+</Tab>
+
+<Tab title="Flutter">
+
+<Steps>
+
+<Step>
+Dispare o evento de visualização de página.
+```dart
+solomon.track(SolomonEvent.viewPage);
+```
+</Step>
+
+<Step>
+Dispare eventos com payload e aliases.
+```dart
+// Visualização de produto
+await solomon.track(SolomonEvent.contentView, payload: {
+  'id': 'produto-123',
+  'title': 'Camiseta Azul',
+  'price': 49.90,
+  'variant': 'M',
+});
+
+// Adição ao carrinho
+await solomon.track(SolomonEvent.addToCart, payload: {
+  'item_id': 'produto-123',
+  'item_quantity': 2,
+});
+
+// Checkout completo com aliases
+await solomon.track(SolomonEvent.checkoutCompleted, payload: {
+  'items': [{'item_id': 'produto-123', 'item_quantity': 2}],
+}, aliases: {
+  'email': 'cliente@exemplo.com',
+  'order_id': 'PED-456',
+  'phone': '11999999999',
+});
+```
+
+Os campos disponíveis em `aliases` são: `email`, `phone`, `user_id`, `customer_id`, `cart_token` e `order_id`.
+</Step>
+
+</Steps>
+
+</Tab>
+
+</Tabs>
+
 <Note>
   A chamada `track` é assíncrona. O monitoramento de erros deve ser feito por meio do console,
   com a opção `debug` ativada na configuração do SDK.
@@ -333,8 +589,14 @@ Os campos disponíveis em `aliases` são: `email`, `phone`, `user_id`, `customer
 
 ## Storage customizado
 
-Por padrão, o SDK utiliza `AsyncStorage` para persistir dados. Se você preferir usar uma solução mais
-performática como o MMKV, basta passar um adapter customizado na inicialização.
+Por padrão, o SDK persiste dados no storage nativo da plataforma. Se preferir uma solução mais
+performática, basta passar um adapter customizado na inicialização.
+
+<Tabs>
+
+<Tab title="React Native">
+
+Padrão: `AsyncStorage`. Exemplo substituindo por MMKV:
 
 ```tsx
 import { MMKV } from 'react-native-mmkv';
@@ -350,3 +612,31 @@ const sdk = new SolomonSDK({
   },
 });
 ```
+
+</Tab>
+
+<Tab title="Flutter">
+
+Padrão: `SharedPreferences`. Implemente `StorageAdapter` para usar outra solução:
+
+```dart
+class MyStorage implements StorageAdapter {
+  @override
+  Future<String?> getItem(String key) async { /* ... */ }
+
+  @override
+  Future<void> setItem(String key, String value) async { /* ... */ }
+
+  @override
+  Future<void> removeItem(String key) async { /* ... */ }
+}
+
+final sdk = SolomonSDK(SolomonConfig(
+  companyId: 'SEU_COMPANY_ID',
+  storage: MyStorage(),
+));
+```
+
+</Tab>
+
+</Tabs>
